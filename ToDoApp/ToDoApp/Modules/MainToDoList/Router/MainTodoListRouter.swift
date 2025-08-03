@@ -7,16 +7,31 @@
 
 import UIKit
 
-final class MainTodoListRouter {
+final class MainTodoListRouter: MainTodoListRouterProtocol {
+    weak var viewController: UIViewController?
+    
+    func navigateToAddTask() {
+        let addTaskVC = AddTaskRouter.createModule { [weak self] newTask in
+            guard let self, let vc = self.viewController as? MainTodoListViewController else { return }
+            
+            vc.insertTodo(newTask)
+            }
+        
+        viewController?.navigationController?.pushViewController(addTaskVC, animated: true)
+    }
+    
     static func createModule() -> UIViewController {
         let view = MainTodoListViewController()
         let presenter = MainTodoListPresenter()
         let interactor = MainTodoListInteractor()
+        let router = MainTodoListRouter()
 
         view.presenter = presenter
         presenter.view = view
+        presenter.router = router
         presenter.interactor = interactor
         interactor.output = presenter
+        router.viewController = view
 
         return view
     }

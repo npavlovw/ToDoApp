@@ -14,8 +14,8 @@ final class TodoCoreDataService {
     private let context: NSManagedObjectContext
 
     private init() {
-        let appDelegate = DispatchQueue.main.sync {
-            UIApplication.shared.delegate as! AppDelegate
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
+            fatalError("Не удалось получить AppDelegate")
         }
         context = appDelegate.persistentContainer.viewContext
     }

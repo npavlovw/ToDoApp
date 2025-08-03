@@ -8,10 +8,6 @@
 import UIKit
 import SnapKit
 
-protocol MainTodoListViewProtocol: AnyObject {
-    func showTodos(_ todos: [TodoEntity])
-}
-
 class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     var presenter: MainTodoListPresenterProtocol?
     private var todos: [TodoEntity] = []
@@ -35,6 +31,9 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     //MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        let backItem = UIBarButtonItem()
+        backItem.title = "Назад"
+        navigationItem.backBarButtonItem = backItem
         presenter?.viewDidLoad()
         setupUI()
         makeConstraints()
@@ -56,12 +55,12 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         searchBar.tintColor = .grayApp //по макету не понятен цвет (написан, что белый, хотя по изображению он не чисто белый)
         if let textField = searchBar.value(forKey: "searchField") as? UITextField {
             textField.backgroundColor = .grayApp
-            textField.textColor = .whitaApp
-            textField.leftView?.tintColor = .whitaApp
+            textField.textColor = .whiteApp
+            textField.leftView?.tintColor = .whiteApp
             textField.attributedPlaceholder = NSAttributedString(
                 string: "Search",
                 attributes: [
-                    .foregroundColor: UIColor.whitaApp
+                    .foregroundColor: UIColor.whiteApp
                 ]
             )
             textField.snp.makeConstraints {
@@ -85,6 +84,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         let icon = UIImage(systemName: "square.and.pencil")
         addBtn.setImage(icon, for: .normal)
         addBtn.tintColor = .yellowApp
+        addBtn.addTarget(self, action: #selector(didTapAdd), for: .touchUpInside)
     }
     
     // MARK: - Constraints
@@ -127,6 +127,22 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
             $0.trailing.equalToSuperview().inset(24)
         }
     }
+    
+    @objc private func didTapAdd() {
+        presenter?.didTapAddTask()
+    }
+    
+    private func format(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yy"
+        return formatter.string(from: date)
+    }
+    
+    func insertTodo(_ todo: TodoEntity) {
+        todos.insert(todo, at: 0)
+        tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
+        taskCountLabel.text = "\(todos.count) Задач"
+    }
 }
 
     //MARK: - Extension
@@ -147,10 +163,4 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
             isDone: todo.isCompleted)
         return cell
     }
-    
-    private func format(_ date: Date) -> String {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            return formatter.string(from: date)
-        }
 }
