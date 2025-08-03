@@ -8,7 +8,21 @@
 import UIKit
 import SnapKit
 
-class MainTodoListViewController: UIViewController {
+protocol MainTodoListViewProtocol: AnyObject {
+    func showTodos(_ todos: [TodoEntity])
+}
+
+class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
+    var presenter: MainTodoListPresenterProtocol?
+    private var todos: [TodoEntity] = []
+
+    func showTodos(_ todos: [TodoEntity]) {
+        self.todos = todos
+        tableView.reloadData()
+        
+        taskCountLabel.text = "\(todos.count) Задач"
+    }
+    
     
     //MARK: - UI
     private let titleLabel = UILabel()
@@ -21,6 +35,7 @@ class MainTodoListViewController: UIViewController {
     //MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        presenter?.viewDidLoad()
         setupUI()
         makeConstraints()
     }
@@ -65,7 +80,6 @@ class MainTodoListViewController: UIViewController {
         bottomBar.backgroundColor = .grayApp
         taskCountLabel.textColor = .white
         taskCountLabel.font = UIFont.systemFont(ofSize: 11)
-        updateTaskCount()
         
         //AddBtn
         let icon = UIImage(systemName: "square.and.pencil")
@@ -113,27 +127,30 @@ class MainTodoListViewController: UIViewController {
             $0.trailing.equalToSuperview().inset(24)
         }
     }
-    
-    private func updateTaskCount() {
-        taskCountLabel.text = "N Задач"
-    }
 }
 
     //MARK: - Extension
 extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 10
+        return todos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let todo = todos[indexPath.row]
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCell", for: indexPath) as? ToDoTableViewCell else {
             return UITableViewCell()
         }
         cell.configure(
-            title: "Title",
-            description: "Description",
-            date: "Date",
-            isDone: indexPath.row % 2 == 0)
+            title: todo.title,
+            description: todo.description,
+            date: format(todo.date),
+            isDone: todo.isCompleted)
         return cell
     }
+    
+    private func format(_ date: Date) -> String {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .medium
+            return formatter.string(from: date)
+        }
 }
