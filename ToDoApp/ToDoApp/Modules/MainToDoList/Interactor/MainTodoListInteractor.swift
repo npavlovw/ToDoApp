@@ -13,16 +13,26 @@ protocol MainTodoListInteractorOutput: AnyObject {
 
 final class MainTodoListInteractor: MainTodoListInteractorProtocol {
     weak var output: MainTodoListInteractorOutput?
-
+    
     func fetchTodos() {
-        TodoNetworkService.shared.fetchTodos { [ weak self ] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let todos):
-                    self?.output?.didFetchTodos(todos)
-                case .failure(let error):
-                    print("Ошибка загрузки: \(error.localizedDescription)")
-                    self?.output?.didFetchTodos([])
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let localTodos = TodoCoreDataService.shared.fetchTodos()
+            
+            if !localTodos.isEmpty {
+                DispatchQueue.main.async {
+                    self?.output?.didFetchTodos(localTodos)
+                }
+            } else {
+                TodoNetworkService.shared.fetchTodos { [ weak self ] result in
+                    DispatchQueue.main.async {
+                        switch result {
+                        case .success(let todos):
+                            self?.output?.didFetchTodos(todos)
+                        case .failure(let error):
+                            print("Ошибка загрузки: \(error.localizedDescription)")
+                            self?.output?.didFetchTodos([])
+                        }
+                    }
                 }
             }
         }
