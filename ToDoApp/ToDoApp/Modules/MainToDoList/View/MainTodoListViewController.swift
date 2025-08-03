@@ -161,6 +161,18 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
             description: todo.description,
             date: format(todo.date),
             isDone: todo.isCompleted)
+        
+        cell.onToggleStatus = { [weak self] in
+            guard let self else { return }
+            var todo = self.todos[indexPath.row]
+            todo.isCompleted.toggle()
+            
+            TodoCoreDataService.shared.updateTodoStatus(id: todo.id, isCompleted: todo.isCompleted)
+
+            // Обновляем данные и UI
+            self.todos[indexPath.row] = todo
+            self.tableView.reloadRows(at: [indexPath], with: .automatic)
+        }
         return cell
     }
 }

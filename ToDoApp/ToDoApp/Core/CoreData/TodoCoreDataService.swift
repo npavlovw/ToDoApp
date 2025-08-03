@@ -86,4 +86,18 @@ final class TodoCoreDataService {
             }
         }
     }
+    
+    func updateTodoStatus(id: Int, isCompleted: Bool) {
+        let request: NSFetchRequest<Todo> = Todo.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %d", id)
+
+        do {
+            if let todo = try context.fetch(request).first {
+                todo.isCompleted = isCompleted
+                saveContext()
+            }
+        } catch {
+            print("Ошибка обновления статуса задачи: \(error)")
+        }
+    }
 }

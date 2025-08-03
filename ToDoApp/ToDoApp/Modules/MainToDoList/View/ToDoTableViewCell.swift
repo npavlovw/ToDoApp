@@ -9,6 +9,7 @@ import UIKit
 import SnapKit
 
 final class ToDoTableViewCell: UITableViewCell {
+    var onToggleStatus: (() -> Void)?
     
     //MARK: - UI
     private let titleLabel = UILabel()
@@ -20,6 +21,10 @@ final class ToDoTableViewCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTapStatus))
+        statusView.isUserInteractionEnabled = true
+        statusView.addGestureRecognizer(tapGesture)
     }
     
     required init?(coder: NSCoder) {
@@ -65,6 +70,11 @@ final class ToDoTableViewCell: UITableViewCell {
             $0.leading.equalTo(statusView.snp.trailing).offset(8)
             $0.trailing.equalToSuperview().inset(20)
         }
+    }
+    
+    //MARK: - Actions
+    @objc private func didTapStatus() {
+        onToggleStatus?()
     }
     
     //MARK: - Public
