@@ -272,7 +272,6 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
         let todo = todos[indexPath.row]
         
         return UIContextMenuConfiguration(identifier: nil, previewProvider: {
-            // Предпросмотр (если хочешь кастомный)
             return self.makePreviewController(for: todo)
         }, actionProvider: { _ in
             return self.makeContextMenu(for: todo, at: indexPath)
@@ -283,5 +282,12 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
         let todo = todos[indexPath.row]
         presenter?.didSelectTodo(todo)
         tableView.deselectRow(at: indexPath, animated: true)
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle,forRowAt indexPath: IndexPath) {
+        
+        if editingStyle == .delete {
+            deleteTodo(at: indexPath)
+        }
     }
 }
