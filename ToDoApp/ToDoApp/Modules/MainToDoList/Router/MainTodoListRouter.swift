@@ -10,16 +10,6 @@ import UIKit
 final class MainTodoListRouter: MainTodoListRouterProtocol {
     weak var viewController: UIViewController?
     
-    func navigateToAddTask() {
-        let addTaskVC = AddTaskRouter.createModule { [weak self] newTask in
-            guard let self, let vc = self.viewController as? MainTodoListViewController else { return }
-            
-            vc.insertTodo(newTask)
-            }
-        
-        viewController?.navigationController?.pushViewController(addTaskVC, animated: true)
-    }
-    
     static func createModule() -> UIViewController {
         let view = MainTodoListViewController()
         let presenter = MainTodoListPresenter()
@@ -34,5 +24,20 @@ final class MainTodoListRouter: MainTodoListRouterProtocol {
         router.viewController = view
 
         return view
+    }
+    
+    func navigateToAddTask() {
+        let addTaskVC = AddTaskRouter.createModule { [weak self] newTask in
+            guard let self, let vc = self.viewController as? MainTodoListViewController else { return }
+            
+            vc.insertTodo(newTask)
+            }
+        
+        viewController?.navigationController?.pushViewController(addTaskVC, animated: true)
+    }
+    
+    func navigateToEditTodo(from view: UIViewController, todo: TodoEntity) {
+        let editVC = EditTaskRouter.createModule(with: todo)
+        viewController?.navigationController?.pushViewController(editVC, animated: true)
     }
 }

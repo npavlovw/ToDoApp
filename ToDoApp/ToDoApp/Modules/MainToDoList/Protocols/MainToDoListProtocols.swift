@@ -5,6 +5,8 @@
 //  Created by Никита Павлов on 03.08.2025.
 //
 
+import UIKit
+
 // MARK: - Interactor
 protocol MainTodoListInteractorProtocol: AnyObject {
     func fetchTodos()
@@ -18,6 +20,7 @@ protocol MainTodoListInteractorOutput: AnyObject {
 protocol MainTodoListPresenterProtocol: AnyObject {
     func viewDidLoad()
     func didTapAddTask()
+    func didSelectTodo(_ todo: TodoEntity)
 }
 
 // MARK: - View
@@ -28,4 +31,5 @@ protocol MainTodoListViewProtocol: AnyObject {
 // MARK: - Router
 protocol MainTodoListRouterProtocol: AnyObject {
     func navigateToAddTask()
+    func navigateToEditTodo(from view: UIViewController, todo: TodoEntity)
 }

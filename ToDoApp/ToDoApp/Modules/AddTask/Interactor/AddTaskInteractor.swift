@@ -23,7 +23,7 @@ final class AddTaskInteractor: AddTaskInteractorProtocol {
             isCompleted: false
         )
         
-        coreDataService.addTodo(newTodo)
+        coreDataService?.addTodo(newTodo)
         presenter?.didSaveTodo(newTodo)
     }
 }

@@ -143,10 +143,102 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
         taskCountLabel.text = "\(todos.count) Задач"
     }
+    
+    private func makeContextMenu(for todo: TodoEntity, at indexPath: IndexPath) -> UIMenu {
+        
+        let edit = UIAction(title: "Редактировать", image: UIImage(systemName: "pencil")) { _ in
+            self.editTodo(todo)
+        }
+
+        let share = UIAction(title: "Поделиться", image: UIImage(systemName: "square.and.arrow.up")) { _ in
+            self.shareTodo(todo)
+        }
+
+        let delete = UIAction(title: "Удалить",
+                              image: UIImage(systemName: "trash"),
+                              attributes: [.destructive]) { _ in
+            self.deleteTodo(at: indexPath)
+        }
+
+        return UIMenu(title: "", children: [edit, share, delete])
+    }
+    
+    private func makePreviewController(for todo: TodoEntity) -> UIViewController {
+        let preview = UIViewController()
+        preview.view.backgroundColor = .darkGray
+        preview.view.layer.cornerRadius = 12
+
+        let titleLabel = UILabel()
+        titleLabel.font = UIFont.boldSystemFont(ofSize: 16)
+        titleLabel.textColor = .white
+        titleLabel.text = todo.title
+
+        let descriptionLabel = UILabel()
+        descriptionLabel.font = UIFont.systemFont(ofSize: 12)
+        descriptionLabel.textColor = .white
+        descriptionLabel.numberOfLines = 0
+        descriptionLabel.text = todo.description
+
+        let dateLabel = UILabel()
+        dateLabel.font = UIFont.systemFont(ofSize: 12)
+        dateLabel.textColor = .gray
+        let formatter = DateFormatter()
+        formatter.dateFormat = "dd/MM/yy"
+        dateLabel.text = formatter.string(from: todo.date)
+
+        let stack = UIStackView(arrangedSubviews: [titleLabel, descriptionLabel, dateLabel])
+        stack.axis = .vertical
+        stack.spacing = 6
+        stack.alignment = .leading
+        stack.distribution = .fill
+
+        preview.view.addSubview(stack)
+
+        stack.snp.makeConstraints {
+            $0.top.bottom.equalToSuperview().inset(12)
+            $0.leading.trailing.equalToSuperview().inset(16)
+        }
+
+        let screenWidth = UIScreen.main.bounds.width
+        let targetWidth = screenWidth * 0.9
+        
+        preview.view.setNeedsLayout()
+        preview.view.layoutIfNeeded()
+
+        let targetSize = CGSize(width: targetWidth, height: UIView.layoutFittingCompressedSize.height)
+        let fittedSize = preview.view.systemLayoutSizeFitting(targetSize)
+
+        preview.preferredContentSize = CGSize(width: targetSize.width, height: fittedSize.height)
+
+        return preview
+    }
+
+    private func editTodo(_ todo: TodoEntity) {
+        // Перейти к экрану редактирования
+    }
+
+    private func shareTodo(_ todo: TodoEntity) {
+        let activityVC = UIActivityViewController(
+            activityItems: [todo.title, todo.description],
+            applicationActivities: nil
+        )
+        present(activityVC, animated: true)
+    }
+
+    private func deleteTodo(at indexPath: IndexPath) {
+        let todo = todos[indexPath.row]
+
+        TodoCoreDataService.shared.deleteTodoFromCoreData(with: todo.id)
+
+        todos.remove(at: indexPath.row)
+        tableView.deleteRows(at: [indexPath], with: .fade)
+        taskCountLabel.text = "\(todos.count) Задач"
+    }
 }
 
     //MARK: - Extension
 extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate {
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return todos.count
     }
@@ -174,5 +266,22 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
             self.tableView.reloadRows(at: [indexPath], with: .automatic)
         }
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
+        let todo = todos[indexPath.row]
+        
+        return UIContextMenuConfiguration(identifier: nil, previewProvider: {
+            // Предпросмотр (если хочешь кастомный)
+            return self.makePreviewController(for: todo)
+        }, actionProvider: { _ in
+            return self.makeContextMenu(for: todo, at: indexPath)
+        })
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let todo = todos[indexPath.row]
+        presenter?.didSelectTodo(todo)
+        tableView.deselectRow(at: indexPath, animated: true)
     }
 }

@@ -8,8 +8,8 @@ import Foundation
 
 struct TodoEntity {
     let id: Int
-    let title: String
-    let description: String
-    let date: Date
+    var title: String
+    var description: String
+    var date: Date
     var isCompleted: Bool
 }

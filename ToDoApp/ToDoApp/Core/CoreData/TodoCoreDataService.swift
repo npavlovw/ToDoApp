@@ -10,14 +10,16 @@ import CoreData
 import UIKit
 
 final class TodoCoreDataService {
-    static let shared = TodoCoreDataService()
+    private(set) static var shared: TodoCoreDataService!
+
+    static func initializeShared(with context: NSManagedObjectContext) {
+        self.shared = TodoCoreDataService(context: context)
+    }
+    
     private let context: NSManagedObjectContext
 
-    private init() {
-        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else {
-            fatalError("Не удалось получить AppDelegate")
-        }
-        context = appDelegate.persistentContainer.viewContext
+    private init(context: NSManagedObjectContext) {
+        self.context = context
     }
 
     func saveTodos(_ todos: [TodoEntity]) {
@@ -33,6 +35,23 @@ final class TodoCoreDataService {
         }
 
         saveContext()
+    }
+    
+    func updateTodo(_ todo: TodoEntity) {
+        let request: NSFetchRequest<Todo> = Todo.fetchRequest()
+        request.predicate = NSPredicate(format: "id == %d", todo.id)
+
+        do {
+            if let cdTodo = try context.fetch(request).first {
+                cdTodo.title = todo.title
+                cdTodo.todoDesc = todo.description
+                cdTodo.date = todo.date
+                cdTodo.isCompleted = todo.isCompleted
+                saveContext()
+            }
+        } catch {
+            print("Ошибка обновления задачи: \(error)")
+        }
     }
 
     func fetchTodos() -> [TodoEntity] {
@@ -64,6 +83,23 @@ final class TodoCoreDataService {
         cdTodo.isCompleted = todo.isCompleted
         saveContext()
     }
+    
+    func deleteTodoFromCoreData(with id: Int) {
+        let fetchRequest: NSFetchRequest<Todo> = Todo.fetchRequest()
+        fetchRequest.predicate = NSPredicate(format: "id == %d", id)
+
+        do {
+            if let todoObject = try context.fetch(fetchRequest).first {
+                context.delete(todoObject)
+                try context.save()
+            } else {
+                print("⚠️ Не найден объект с id: \(id)")
+            }
+        } catch {
+            print("❌ Ошибка при удалении объекта из Core Data: \(error)")
+        }
+    }
+
 
     func deleteAllTodos() {
         let request: NSFetchRequest<NSFetchRequestResult> = Todo.fetchRequest()

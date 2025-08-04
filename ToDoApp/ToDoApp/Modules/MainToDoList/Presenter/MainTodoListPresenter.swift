@@ -21,6 +21,11 @@ final class MainTodoListPresenter: MainTodoListPresenterProtocol {
     func didTapAddTask() {
         router?.navigateToAddTask()
     }
+    
+    func didSelectTodo(_ todo: TodoEntity) {
+        guard let view = view as? UIViewController else { return }
+        router?.navigateToEditTodo(from: view, todo: todo)
+    }
 }
 
 extension MainTodoListPresenter: MainTodoListInteractorOutput {
