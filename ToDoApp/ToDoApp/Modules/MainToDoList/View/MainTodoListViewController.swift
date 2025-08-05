@@ -234,6 +234,14 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         tableView.deleteRows(at: [indexPath], with: .fade)
         taskCountLabel.text = "\(todos.count) Задач"
     }
+    
+    func updateTodo(_ updatedTodo: TodoEntity) {
+        if let index = todos.firstIndex(where: { $0.id == updatedTodo.id }) {
+            todos[index] = updatedTodo
+            tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+        }
+    }
+
 }
 
     //MARK: - Extension

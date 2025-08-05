@@ -37,7 +37,10 @@ final class MainTodoListRouter: MainTodoListRouterProtocol {
     }
     
     func navigateToEditTodo(from view: UIViewController, todo: TodoEntity) {
-        let editVC = EditTaskRouter.createModule(with: todo)
+        let editVC = EditTaskRouter.createModule(with: todo) { [weak self] updatedTodo in
+            guard let self, let vc = self.viewController as? MainTodoListViewController else { return }
+            vc.updateTodo(updatedTodo)
+        }
         viewController?.navigationController?.pushViewController(editVC, animated: true)
     }
 }

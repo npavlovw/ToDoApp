@@ -12,10 +12,10 @@ final class EditTaskRouter: EditTaskRouterProtocol {
     weak var viewController: UIViewController?
 
     func dismiss() {
-        viewController?.dismiss(animated: true)
+        viewController?.navigationController?.popViewController(animated: true)
     }
 
-    static func createModule(with todo: TodoEntity) -> UIViewController {
+    static func createModule(with todo: TodoEntity, onUpdate: @escaping (TodoEntity) -> Void) -> UIViewController {
         let view = EditTaskViewController()
         let presenter = EditTaskPresenter(todo: todo)
         let interactor = EditTaskInteractor()
@@ -27,6 +27,8 @@ final class EditTaskRouter: EditTaskRouterProtocol {
         presenter.router = router
         interactor.output = presenter
         router.viewController = view
+        
+        presenter.onUpdate = onUpdate
 
         return view
     }

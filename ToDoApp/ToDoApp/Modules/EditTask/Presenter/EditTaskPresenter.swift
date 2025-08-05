@@ -13,6 +13,7 @@ final class EditTaskPresenter: EditTaskPresenterProtocol {
     var router: EditTaskRouterProtocol!
     
     private var todo: TodoEntity
+    var onUpdate: ((TodoEntity) -> Void)?
     
     init(todo: TodoEntity) {
         self.todo = todo
@@ -38,6 +39,7 @@ final class EditTaskPresenter: EditTaskPresenterProtocol {
 
 extension EditTaskPresenter: EditTaskInteractorOutputProtocol {
     func todoDidUpdate() {
+        onUpdate?(todo)
         view?.showSaveSuccess()
     }
 }

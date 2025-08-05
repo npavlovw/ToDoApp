@@ -101,7 +101,7 @@ final class EditTaskViewController: UIViewController, EditTaskViewProtocol {
     }
 
     func showSaveSuccess() {
-        navigationController?.popViewController(animated: true)
+        presenter?.router.dismiss()
     }
 
     @objc private func didTapBack() {
