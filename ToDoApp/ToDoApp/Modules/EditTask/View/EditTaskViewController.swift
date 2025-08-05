@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class EditTaskViewController: UIViewController, EditTaskViewProtocol {
+final class EditTaskViewController: UIViewController, EditTaskViewProtocol, UIGestureRecognizerDelegate {
     var presenter: EditTaskPresenterProtocol!
     
     private let backButton = UIButton(type: .system)
@@ -21,6 +21,9 @@ final class EditTaskViewController: UIViewController, EditTaskViewProtocol {
         setupUI()
         makeConstraints()
         presenter.viewDidLoad()
+        
+        self.navigationController?.interactivePopGestureRecognizer?.delegate = self
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
 
     //MARK: - setup UI
@@ -106,5 +109,9 @@ final class EditTaskViewController: UIViewController, EditTaskViewProtocol {
 
     @objc private func didTapBack() {
         presenter.didTapSave(title: titleField.text, description: descriptionTextView.text)
+    }
+    
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return self.navigationController?.viewControllers.count ?? 0 > 1
     }
 }

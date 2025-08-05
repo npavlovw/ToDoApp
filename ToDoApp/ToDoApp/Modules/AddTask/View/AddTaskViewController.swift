@@ -9,7 +9,7 @@ import Foundation
 import UIKit
 import SnapKit
 
-final class AddTaskViewController: UIViewController, AddTaskViewProtocol {
+final class AddTaskViewController: UIViewController, AddTaskViewProtocol, UIGestureRecognizerDelegate {
     
     var presenter: AddTaskPresenterProtocol?
 
@@ -26,6 +26,9 @@ final class AddTaskViewController: UIViewController, AddTaskViewProtocol {
         view.backgroundColor = .black
         setupUI()
         makeConstraints()
+        
+        self.navigationController?.interactivePopGestureRecognizer?.delegate = self
+        self.navigationController?.interactivePopGestureRecognizer?.isEnabled = true
     }
 
     //MARK: - setup UI
@@ -108,9 +111,7 @@ final class AddTaskViewController: UIViewController, AddTaskViewProtocol {
     }
     
     @objc private func didTapBack() {
-        let title = titleField.text ?? ""
-        let description = descriptionTextView.text ?? ""
-        presenter?.didTapSave(title: title, description: description)
+        presenter?.didTapSave(title: titleField.text ?? "", description: descriptionTextView.text ?? "")
     }
 
     func showSuccess() {
@@ -121,6 +122,10 @@ final class AddTaskViewController: UIViewController, AddTaskViewProtocol {
         let alert = UIAlertController(title: "Ошибка", message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "Ок", style: .default))
         present(alert, animated: true)
+    }
+    
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        return self.navigationController?.viewControllers.count ?? 0 > 1
     }
 }
 

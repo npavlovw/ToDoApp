@@ -31,9 +31,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     //MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        let backItem = UIBarButtonItem()
-        backItem.title = "Назад"
-        navigationItem.backBarButtonItem = backItem
+        self.navigationController?.isNavigationBarHidden = true
         presenter?.viewDidLoad()
         setupUI()
         makeConstraints()
@@ -42,7 +40,6 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     //MARK: - Setup UI
     private func setupUI() {
         view.backgroundColor = .black
-        self.navigationController?.isNavigationBarHidden = true
         
         //Title
         titleLabel.text = "Задачи"
@@ -52,7 +49,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         //SearchBar
         searchBar.placeholder = "Search"
         searchBar.searchBarStyle = .minimal
-        searchBar.tintColor = .grayApp //по макету не понятен цвет (написан, что белый, хотя по изображению он не чисто белый)
+        searchBar.tintColor = .grayApp
         if let textField = searchBar.value(forKey: "searchField") as? UITextField {
             textField.backgroundColor = .grayApp
             textField.textColor = .whiteApp
@@ -146,16 +143,16 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     
     private func makeContextMenu(for todo: TodoEntity, at indexPath: IndexPath) -> UIMenu {
         
-        let edit = UIAction(title: "Редактировать", image: UIImage(systemName: "pencil")) { _ in
+        let edit = UIAction(title: "Редактировать", image: UIImage(named: "EditApp")) { _ in
             self.editTodo(todo)
         }
 
-        let share = UIAction(title: "Поделиться", image: UIImage(systemName: "square.and.arrow.up")) { _ in
+        let share = UIAction(title: "Поделиться", image: UIImage(named: "ShareApp")) { _ in
             self.shareTodo(todo)
         }
 
         let delete = UIAction(title: "Удалить",
-                              image: UIImage(systemName: "trash"),
+                              image: UIImage(named: "TrashApp"),
                               attributes: [.destructive]) { _ in
             self.deleteTodo(at: indexPath)
         }
@@ -214,8 +211,8 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     }
 
     private func editTodo(_ todo: TodoEntity) {
-        // Перейти к экрану редактирования
-    }
+        self.presenter?.didSelectTodo(todo)
+}
 
     private func shareTodo(_ todo: TodoEntity) {
         let activityVC = UIActivityViewController(
@@ -256,6 +253,7 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCell", for: indexPath) as? ToDoTableViewCell else {
             return UITableViewCell()
         }
+        
         cell.configure(
             title: todo.title,
             description: todo.description,
@@ -269,7 +267,6 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
             
             TodoCoreDataService.shared.updateTodoStatus(id: todo.id, isCompleted: todo.isCompleted)
 
-            // Обновляем данные и UI
             self.todos[indexPath.row] = todo
             self.tableView.reloadRows(at: [indexPath], with: .automatic)
         }

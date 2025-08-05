@@ -13,11 +13,11 @@ final class AddTaskPresenter: AddTaskPresenterProtocol {
     var router: AddTaskRouterProtocol?
 
     func didTapSave(title: String, description: String) {
-        guard !title.isEmpty else {
-            view?.showError("Введите заголовок задачи")
-            return
+        if title.isEmpty {
+            view?.showSuccess()
+        } else {
+            interactor?.saveTodo(title: title, description: description)
         }
-        interactor?.saveTodo(title: title, description: description)
     }
     
     func didSaveTodo(_ todo: TodoEntity) {
