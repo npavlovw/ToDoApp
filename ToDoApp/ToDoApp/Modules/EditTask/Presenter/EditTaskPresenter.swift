@@ -27,13 +27,9 @@ final class EditTaskPresenter: EditTaskPresenterProtocol {
             view?.showValidationError("Введите заголовок")
             return
         }
-        guard let description = description, !description.isEmpty else {
-            view?.showValidationError("Введите описание")
-            return
-        }
 
         todo.title = title
-        todo.description = description
+        todo.description = description ?? ""
         todo.date = Date()
 
         interactor.updateTodo(todo)

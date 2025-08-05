@@ -95,7 +95,9 @@ final class EditTaskViewController: UIViewController, EditTaskViewProtocol {
     }
 
     func showValidationError(_ message: String) {
-        // Покажи алерт или метку
+        let alert = UIAlertController(title: "Ошибка", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Ок", style: .default))
+        present(alert, animated: true)
     }
 
     func showSaveSuccess() {
