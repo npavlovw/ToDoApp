@@ -12,6 +12,8 @@ import Speech
 class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     var presenter: MainTodoListPresenterProtocol?
     private var todos: [TodoEntity] = []
+    var filteredTodos: [TodoEntity] = []
+    var isSearching = false
     
     //MARK: - UI
     private let titleLabel = UILabel()
@@ -191,7 +193,23 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         let delete = UIAction(title: "Удалить",
                               image: UIImage(named: "TrashApp"),
                               attributes: [.destructive]) { _ in
-            self.deleteTodo(at: indexPath)
+            if self.isSearching {
+                let fullIndex = self.todos.firstIndex(where: { $0.id == todo.id })
+                let filteredIndex = self.filteredTodos.firstIndex(where: { $0.id == todo.id })
+
+                if let fullIndex = fullIndex {
+                    self.todos.remove(at: fullIndex)
+                }
+                if let filteredIndex = filteredIndex {
+                    self.filteredTodos.remove(at: filteredIndex)
+                    self.tableView.deleteRows(at: [IndexPath(row: filteredIndex, section: 0)], with: .automatic)
+                } else {
+                    self.tableView.reloadData()
+                }
+            } else {
+                self.todos.remove(at: indexPath.row)
+                self.tableView.deleteRows(at: [indexPath], with: .automatic)
+            }
         }
 
         return UIMenu(title: "", children: [edit, share, delete])
@@ -335,11 +353,11 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
 extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return todos.count
+        return isSearching ? filteredTodos.count : todos.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let todo = todos[indexPath.row]
+        let todo = isSearching ? filteredTodos[indexPath.row] : todos[indexPath.row]
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCell", for: indexPath) as? ToDoTableViewCell else {
             return UITableViewCell()
         }
@@ -353,19 +371,27 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
         
         cell.onToggleStatus = { [weak self] in
             guard let self else { return }
-            var todo = self.todos[indexPath.row]
+            var todo = isSearching ? filteredTodos[indexPath.row] : todos[indexPath.row]
             todo.isCompleted.toggle()
             
             TodoCoreDataService.shared.updateTodoStatus(id: todo.id, isCompleted: todo.isCompleted)
 
-            self.todos[indexPath.row] = todo
+            if self.isSearching {
+                if let fullIndex = self.todos.firstIndex(where: { $0.id == todo.id }) {
+                    self.todos[fullIndex] = todo
+                }
+                self.filteredTodos[indexPath.row] = todo
+            } else {
+                self.todos[indexPath.row] = todo
+            }
+            
             self.tableView.reloadRows(at: [indexPath], with: .automatic)
         }
         return cell
     }
     
     func tableView(_ tableView: UITableView, contextMenuConfigurationForRowAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
-        let todo = todos[indexPath.row]
+        let todo = isSearching ? filteredTodos[indexPath.row] : todos[indexPath.row]
         
         return UIContextMenuConfiguration(identifier: nil, previewProvider: {
             return self.makePreviewController(for: todo)
@@ -375,7 +401,7 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let todo = todos[indexPath.row]
+        let todo = isSearching ? filteredTodos[indexPath.row] : todos[indexPath.row]
         presenter?.didSelectTodo(todo)
         tableView.deselectRow(at: indexPath, animated: true)
     }
@@ -386,10 +412,30 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
             deleteTodo(at: indexPath)
         }
     }
+    
+    func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+        dismissKeyboard()
+    }
 }
 
 extension MainTodoListViewController: UISearchBarDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         dismissKeyboard()
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchText.isEmpty {
+            isSearching = false
+            tableView.reloadData()
+            return
+        }
+
+        isSearching = true
+        filteredTodos = todos.filter { todo in
+            todo.title.lowercased().contains(searchText.lowercased()) ||
+            todo.description.lowercased().contains(searchText.lowercased())
+        }
+
+        tableView.reloadData()
     }
 }
