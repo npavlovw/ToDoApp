@@ -7,26 +7,25 @@
 
 import UIKit
 import SnapKit
+import Speech
 
 class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     var presenter: MainTodoListPresenterProtocol?
     private var todos: [TodoEntity] = []
-
-    func showTodos(_ todos: [TodoEntity]) {
-        self.todos = todos
-        tableView.reloadData()
-        
-        taskCountLabel.text = "\(todos.count) Задач"
-    }
-    
     
     //MARK: - UI
     private let titleLabel = UILabel()
     private let searchBar = UISearchBar()
+    private let micButton = UIButton()
     private let tableView = UITableView()
     private let bottomBar = UIView()
     private let taskCountLabel = UILabel()
     private let addBtn = UIButton()
+    
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private let audioEngine = AVAudioEngine()
 
     //MARK: - LifeCycle
     override func viewDidLoad() {
@@ -35,6 +34,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         presenter?.viewDidLoad()
         setupUI()
         makeConstraints()
+        allowMicrophone()
     }
 
     //MARK: - Setup UI
@@ -64,9 +64,14 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
                 $0.edges.equalToSuperview()
             }
         }
+            
+        //micButton
+        micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
+        micButton.tintColor = .lightGray
+        micButton.addTarget(self, action: #selector(micButtonTapped), for: .touchUpInside)
         
         //TableView
-        tableView.backgroundColor = .clear
+        tableView.backgroundColor = .black
         tableView.separatorStyle = .singleLine
         tableView.register(ToDoTableViewCell.self, forCellReuseIdentifier: "ToDoCell")
         tableView.dataSource = self
@@ -88,6 +93,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     private func makeConstraints() {
         view.addSubview(titleLabel)
         view.addSubview(searchBar)
+        view.addSubview(micButton)
         view.addSubview(tableView)
         view.addSubview(bottomBar)
         bottomBar.addSubview(taskCountLabel)
@@ -101,6 +107,12 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         searchBar.snp.makeConstraints {
             $0.top.equalTo(titleLabel.snp.bottom).offset(10)
             $0.leading.trailing.equalToSuperview().inset(20)
+        }
+        
+        micButton.snp.makeConstraints {
+            $0.centerY.equalTo(searchBar.snp.centerY)
+            $0.trailing.equalTo(searchBar.snp.trailing).inset(8)
+            $0.width.height.equalTo(24)
         }
         
         tableView.snp.makeConstraints {
@@ -122,6 +134,26 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         addBtn.snp.makeConstraints {
             $0.centerY.equalTo(taskCountLabel.snp.centerY)
             $0.trailing.equalToSuperview().inset(24)
+        }
+    }
+    
+    // MARK: - Actions
+    
+    func showTodos(_ todos: [TodoEntity]) {
+        self.todos = todos
+        tableView.reloadData()
+        
+        taskCountLabel.text = "\(todos.count) Задач"
+    }
+    
+    func allowMicrophone () {
+        SFSpeechRecognizer.requestAuthorization { authStatus in
+            switch authStatus {
+            case .authorized:
+                print("Speech recognition authorized")
+            default:
+                print("Speech recognition not authorized")
+            }
         }
     }
     
@@ -212,7 +244,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
 
     private func editTodo(_ todo: TodoEntity) {
         self.presenter?.didSelectTodo(todo)
-}
+    }
 
     private func shareTodo(_ todo: TodoEntity) {
         let activityVC = UIActivityViewController(
@@ -239,6 +271,55 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         }
     }
 
+    @objc private func micButtonTapped() {
+        if audioEngine.isRunning {
+            audioEngine.stop()
+            recognitionRequest?.endAudio()
+        } else {
+            startListening()
+        }
+    }
+
+    private func startListening() {
+        if recognitionTask != nil {
+            recognitionTask?.cancel()
+            recognitionTask = nil
+        }
+
+        let audioSession = AVAudioSession.sharedInstance()
+        try? audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try? audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        let inputNode = audioEngine.inputNode
+        guard let recognitionRequest = recognitionRequest else { return }
+
+        recognitionRequest.shouldReportPartialResults = true
+
+        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+            if let result = result {
+                let bestString = result.bestTranscription.formattedString
+                DispatchQueue.main.async {
+                    self?.searchBar.text = bestString
+                }
+            }
+
+            if error != nil || (result?.isFinal ?? false) {
+                self?.audioEngine.stop()
+                inputNode.removeTap(onBus: 0)
+                self?.recognitionRequest = nil
+                self?.recognitionTask = nil
+            }
+        }
+
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+            self.recognitionRequest?.append(buffer)
+        }
+
+        audioEngine.prepare()
+        try? audioEngine.start()
+    }
 }
 
     //MARK: - Extension
@@ -253,6 +334,7 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
         guard let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoCell", for: indexPath) as? ToDoTableViewCell else {
             return UITableViewCell()
         }
+        cell.backgroundColor = .black
         
         cell.configure(
             title: todo.title,
