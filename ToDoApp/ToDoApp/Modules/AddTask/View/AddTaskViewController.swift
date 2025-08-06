@@ -29,6 +29,10 @@ final class AddTaskViewController: UIViewController, AddTaskViewProtocol, UIGest
         
         self.navigationController?.interactivePopGestureRecognizer?.delegate = self
         self.navigationController?.interactivePopGestureRecognizer?.isEnabled = true
+        
+        let swipeGesture = UISwipeGestureRecognizer(target: self, action: #selector(handleSwipeDown))
+        swipeGesture.direction = .down
+        view.addGestureRecognizer(swipeGesture)
     }
 
     //MARK: - setup UI
@@ -126,6 +130,10 @@ final class AddTaskViewController: UIViewController, AddTaskViewProtocol, UIGest
     
     func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         return self.navigationController?.viewControllers.count ?? 0 > 1
+    }
+    
+    @objc private func handleSwipeDown() {
+        view.endEditing(true)
     }
 }
 

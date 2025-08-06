@@ -35,6 +35,10 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         setupUI()
         makeConstraints()
         allowMicrophone()
+        
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
     }
 
     //MARK: - Setup UI
@@ -50,6 +54,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         searchBar.placeholder = "Search"
         searchBar.searchBarStyle = .minimal
         searchBar.tintColor = .grayApp
+        searchBar.delegate = self
         if let textField = searchBar.value(forKey: "searchField") as? UITextField {
             textField.backgroundColor = .grayApp
             textField.textColor = .whiteApp
@@ -320,6 +325,10 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         audioEngine.prepare()
         try? audioEngine.start()
     }
+
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
 }
 
     //MARK: - Extension
@@ -376,5 +385,11 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
         if editingStyle == .delete {
             deleteTodo(at: indexPath)
         }
+    }
+}
+
+extension MainTodoListViewController: UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        dismissKeyboard()
     }
 }
