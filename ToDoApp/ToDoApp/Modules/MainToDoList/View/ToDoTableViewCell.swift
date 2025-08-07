@@ -78,28 +78,31 @@ final class ToDoTableViewCell: UITableViewCell {
     }
     
     //MARK: - Public
-    func configure(title: String, description: String, date: String, isDone: Bool) {
-        if isDone {
+    func configure(todo: TodoEntity, dateText: String, onToggleStatus: @escaping (TodoEntity) -> Void) {
+        self.onToggleStatus = { onToggleStatus(todo) }
+
+        if todo.isCompleted {
             let attributedTitle = NSAttributedString(
-                string: title,
+                string: todo.title,
                 attributes: [
                     .strikethroughStyle: NSUnderlineStyle.single.rawValue,
                     .foregroundColor: UIColor.stroke
                 ]
             )
             titleLabel.attributedText = attributedTitle
+            titleLabel.textColor = .stroke
             descriptionLabel.textColor = .stroke
             statusView.image = UIImage(systemName: "checkmark.circle")
             statusView.tintColor = .yellowApp
         } else {
-            titleLabel.attributedText = NSAttributedString(string: title)
+            titleLabel.attributedText = NSAttributedString(string: todo.title)
             titleLabel.textColor = .white
             descriptionLabel.textColor = .white
             statusView.image = UIImage(systemName: "circle")
             statusView.tintColor = .stroke
         }
-        
-        descriptionLabel.text = description
-        dateLabel.text = date
+
+        descriptionLabel.text = todo.description
+        dateLabel.text = dateText
     }
 }

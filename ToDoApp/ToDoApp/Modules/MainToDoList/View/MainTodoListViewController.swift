@@ -148,6 +148,13 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     
     func showTodos(_ todos: [TodoEntity]) {
         self.todos = todos
+            .sorted {
+                if $0.isCompleted == $1.isCompleted {
+                    return $0.date < $1.date
+                }
+                return !$0.isCompleted && $1.isCompleted
+            }
+        
         tableView.reloadData()
         
         taskCountLabel.text = "\(todos.count) Задач"
@@ -364,29 +371,38 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
         cell.backgroundColor = .black
         
         cell.configure(
-            title: todo.title,
-            description: todo.description,
-            date: format(todo.date),
-            isDone: todo.isCompleted)
-        
-        cell.onToggleStatus = { [weak self] in
-            guard let self else { return }
-            var todo = isSearching ? filteredTodos[indexPath.row] : todos[indexPath.row]
-            todo.isCompleted.toggle()
-            
-            TodoCoreDataService.shared.updateTodoStatus(id: todo.id, isCompleted: todo.isCompleted)
+            todo: todo,
+            dateText: format(todo.date),
+            onToggleStatus: { [weak self] tappedTodo in
+                guard let self else { return }
 
-            if self.isSearching {
-                if let fullIndex = self.todos.firstIndex(where: { $0.id == todo.id }) {
-                    self.todos[fullIndex] = todo
+                let newStatus = !tappedTodo.isCompleted
+                TodoCoreDataService.shared.updateTodoStatus(id: tappedTodo.id, isCompleted: newStatus)
+
+                if let index = self.todos.firstIndex(where: { $0.id == tappedTodo.id }) {
+                    self.todos[index].isCompleted = newStatus
                 }
-                self.filteredTodos[indexPath.row] = todo
-            } else {
-                self.todos[indexPath.row] = todo
+                if self.isSearching, let index = self.filteredTodos.firstIndex(where: { $0.id == tappedTodo.id }) {
+                    self.filteredTodos[index].isCompleted = newStatus
+                }
+                
+                self.todos.sort {
+                    if $0.isCompleted == $1.isCompleted {
+                        return $0.date < $1.date
+                    }
+                    return !$0.isCompleted && $1.isCompleted
+                }
+                self.filteredTodos.sort {
+                    if $0.isCompleted == $1.isCompleted {
+                        return $0.date < $1.date
+                    }
+                    return !$0.isCompleted && $1.isCompleted
+                }
+
+                self.tableView.reloadData()
             }
-            
-            self.tableView.reloadRows(at: [indexPath], with: .automatic)
-        }
+        )
+        
         return cell
     }
     
@@ -431,10 +447,17 @@ extension MainTodoListViewController: UISearchBarDelegate {
         }
 
         isSearching = true
-        filteredTodos = todos.filter { todo in
-            todo.title.lowercased().contains(searchText.lowercased()) ||
-            todo.description.lowercased().contains(searchText.lowercased())
-        }
+        filteredTodos = todos
+            .filter { todo in
+                todo.title.lowercased().contains(searchText.lowercased()) ||
+                todo.description.lowercased().contains(searchText.lowercased())
+            }
+            .sorted {
+                if $0.isCompleted == $1.isCompleted {
+                    return $0.date < $1.date
+                }
+                return !$0.isCompleted && $1.isCompleted
+            }
 
         tableView.reloadData()
     }
