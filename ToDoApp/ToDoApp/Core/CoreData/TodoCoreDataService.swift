@@ -7,18 +7,17 @@
 
 import Foundation
 import CoreData
-import UIKit
 
 final class TodoCoreDataService {
     private(set) static var shared: TodoCoreDataService!
+    
+    private let context: NSManagedObjectContext
 
     static func initializeShared(with context: NSManagedObjectContext) {
         self.shared = TodoCoreDataService(context: context)
     }
-    
-    private let context: NSManagedObjectContext
 
-    private init(context: NSManagedObjectContext) {
+    init(context: NSManagedObjectContext) {
         self.context = context
     }
 
