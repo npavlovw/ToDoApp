@@ -7,7 +7,7 @@
 
 final class EditTaskInteractor: EditTaskInteractorProtocol {
     weak var output: EditTaskInteractorOutputProtocol?
-    let coreDataService = TodoCoreDataService.shared
+    private let coreDataService = TodoCoreDataService.shared
 
     func updateTodo(_ todo: TodoEntity) {
         coreDataService?.updateTodo(todo)

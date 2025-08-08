@@ -7,7 +7,6 @@
 
 import UIKit
 
-// EditTaskRouter.swift
 final class EditTaskRouter: EditTaskRouterProtocol {
     weak var viewController: UIViewController?
 
@@ -15,7 +14,8 @@ final class EditTaskRouter: EditTaskRouterProtocol {
         viewController?.navigationController?.popViewController(animated: true)
     }
 
-    static func createModule(with todo: TodoEntity, onUpdate: @escaping (TodoEntity) -> Void) -> UIViewController {
+    static func createModule(with todo: TodoEntity,
+                             onUpdate: @escaping (TodoEntity) -> Void) -> UIViewController {
         let view = EditTaskViewController()
         let presenter = EditTaskPresenter(todo: todo)
         let interactor = EditTaskInteractor()

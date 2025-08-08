@@ -31,5 +31,5 @@ protocol MainTodoListViewProtocol: AnyObject {
 // MARK: - Router
 protocol MainTodoListRouterProtocol: AnyObject {
     func navigateToAddTask()
-    func navigateToEditTodo(from view: UIViewController, todo: TodoEntity)
+    func navigateToEditTodo(todo: TodoEntity)
 }

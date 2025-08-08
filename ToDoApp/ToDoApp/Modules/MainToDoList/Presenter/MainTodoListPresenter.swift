@@ -13,7 +13,6 @@ final class MainTodoListPresenter: MainTodoListPresenterProtocol {
     var interactor: MainTodoListInteractorProtocol?
     var router: MainTodoListRouterProtocol?
 
-    // MARK: - Lifycycle
     func viewDidLoad() {
         interactor?.fetchTodos()
     }
@@ -23,8 +22,7 @@ final class MainTodoListPresenter: MainTodoListPresenterProtocol {
     }
     
     func didSelectTodo(_ todo: TodoEntity) {
-        guard let view = view as? UIViewController else { return }
-        router?.navigateToEditTodo(from: view, todo: todo)
+        router?.navigateToEditTodo(todo: todo)
     }
 }
 

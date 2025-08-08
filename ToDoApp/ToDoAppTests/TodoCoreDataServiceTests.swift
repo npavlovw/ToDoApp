@@ -72,7 +72,7 @@ final class TodoCoreDataServiceTests: XCTestCase {
         let todo = TodoEntity(id: 10, title: "To update", description: "", date: Date(), isCompleted: false)
         sut.addTodo(todo)
         
-        sut.updateTodoStatus(id: 10, isCompleted: true)
+        sut.updateStatus(id: 10, isCompleted: true)
         
         let fetched = sut.fetchTodos().first(where: { $0.id == 10 })
         XCTAssertTrue(fetched?.isCompleted == true)
@@ -82,7 +82,7 @@ final class TodoCoreDataServiceTests: XCTestCase {
         let todo = TodoEntity(id: 99, title: "To delete", description: "", date: Date(), isCompleted: false)
         sut.addTodo(todo)
         
-        sut.deleteTodoFromCoreData(with: 99)
+        sut.deleteTodo(with: 99)
         
         let results = sut.fetchTodos()
         XCTAssertTrue(results.isEmpty)

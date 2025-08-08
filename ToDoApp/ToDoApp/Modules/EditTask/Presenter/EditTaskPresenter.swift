@@ -7,10 +7,10 @@
 
 import Foundation
 
-final class EditTaskPresenter: EditTaskPresenterProtocol {
+final class EditTaskPresenter {
     weak var view: EditTaskViewProtocol?
-    var interactor: EditTaskInteractorProtocol!
-    var router: EditTaskRouterProtocol!
+    var interactor: EditTaskInteractorProtocol?
+    var router: EditTaskRouterProtocol?
     
     private var todo: TodoEntity
     var onUpdate: ((TodoEntity) -> Void)?
@@ -18,22 +18,26 @@ final class EditTaskPresenter: EditTaskPresenterProtocol {
     init(todo: TodoEntity) {
         self.todo = todo
     }
+}
+
+extension EditTaskPresenter: EditTaskPresenterProtocol {
 
     func viewDidLoad() {
         view?.showTodo(todo)
     }
 
     func didTapSave(title: String?, description: String?) {
-        guard let title = title, !title.isEmpty else {
+        guard let title = title?.trimmingCharacters(in: .whitespacesAndNewlines),
+                !title.isEmpty else {
             view?.showValidationError("Введите заголовок")
             return
         }
 
         todo.title = title
-        todo.description = description ?? ""
+        todo.description = description?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         todo.date = Date()
 
-        interactor.updateTodo(todo)
+        interactor?.updateTodo(todo)
     }
 }
 

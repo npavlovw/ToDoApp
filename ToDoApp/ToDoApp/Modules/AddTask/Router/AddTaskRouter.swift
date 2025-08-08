@@ -11,7 +11,7 @@ final class AddTaskRouter: AddTaskRouterProtocol {
     weak var viewController: UIViewController?
 
     func dismiss() {
-        viewController?.dismiss(animated: true)
+        viewController?.navigationController?.popViewController(animated: true)
     }
 
     static func createModule(onTaskAdded: @escaping (TodoEntity) -> Void) -> UIViewController {
@@ -24,10 +24,9 @@ final class AddTaskRouter: AddTaskRouterProtocol {
         presenter.view = view
         presenter.interactor = interactor
         presenter.router = router
+        presenter.onTaskAdded = onTaskAdded
         interactor.presenter = presenter
         router.viewController = view
-
-        presenter.onTaskAdded = onTaskAdded
 
         return view
     }

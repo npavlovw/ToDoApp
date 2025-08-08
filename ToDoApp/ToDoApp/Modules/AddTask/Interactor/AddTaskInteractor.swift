@@ -8,22 +8,25 @@
 import Foundation
 
 final class AddTaskInteractor: AddTaskInteractorProtocol {
-    weak var presenter: AddTaskPresenter?
-    var coreDataService = TodoCoreDataService.shared
+    weak var presenter: AddTaskPresenterProtocol?
+    private let coreDataService: TodoCoreDataService
+    
+    init(coreDataService: TodoCoreDataService = .shared) {
+        self.coreDataService = coreDataService
+    }
 
     func saveTodo(title: String, description: String) {
         let id = Int64(Date().timeIntervalSince1970)
-        let date = Date()
         
         let newTodo = TodoEntity(
             id: Int(id),
             title: title,
             description: description,
-            date: date,
+            date: Date(),
             isCompleted: false
         )
         
-        coreDataService?.addTodo(newTodo)
+        coreDataService.addTodo(newTodo)
         presenter?.didSaveTodo(newTodo)
     }
 }

@@ -20,85 +20,70 @@ final class TodoCoreDataService {
     init(context: NSManagedObjectContext) {
         self.context = context
     }
-
-    func saveTodos(_ todos: [TodoEntity]) {
-        deleteAllTodos()
-
-        for todo in todos {
-            let cdTodo = Todo(context: context)
-            cdTodo.id = Int64(todo.id)
-            cdTodo.title = todo.title
-            cdTodo.todoDesc = todo.description
-            cdTodo.date = todo.date
-            cdTodo.isCompleted = todo.isCompleted
-        }
-
-        saveContext()
-    }
     
-    func updateTodo(_ todo: TodoEntity) {
-        let request: NSFetchRequest<Todo> = Todo.fetchRequest()
-        request.predicate = NSPredicate(format: "id == %d", todo.id)
-
-        do {
-            if let cdTodo = try context.fetch(request).first {
-                cdTodo.title = todo.title
-                cdTodo.todoDesc = todo.description
-                cdTodo.date = todo.date
-                cdTodo.isCompleted = todo.isCompleted
-                saveContext()
-            }
-        } catch {
-            print("Ошибка обновления задачи: \(error)")
-        }
-    }
-
+    // MARK: - Public API
+    
     func fetchTodos() -> [TodoEntity] {
         let request: NSFetchRequest<Todo> = Todo.fetchRequest()
 
         do {
             let results = try context.fetch(request)
-            return results.map {
-                TodoEntity(
-                    id: Int($0.id),
-                    title: $0.title ?? "",
-                    description: $0.todoDesc ?? "",
-                    date: $0.date ?? Date(),
-                    isCompleted: $0.isCompleted
-                )
-            }
+            return results.map { $0.toEntity() }
         } catch {
             print("Ошибка загрузки из CoreData: \(error)")
             return []
         }
     }
 
-    func addTodo(_ todo: TodoEntity) {
-        let cdTodo = Todo(context: context)
-        cdTodo.id = Int64(todo.id)
-        cdTodo.title = todo.title
-        cdTodo.todoDesc = todo.description
-        cdTodo.date = todo.date
-        cdTodo.isCompleted = todo.isCompleted
+    func saveTodos(_ todos: [TodoEntity]) {
+        deleteAllTodos()
+        todos.forEach { createTodoObject(from: $0) }
         saveContext()
     }
     
-    func deleteTodoFromCoreData(with id: Int) {
-        let fetchRequest: NSFetchRequest<Todo> = Todo.fetchRequest()
-        fetchRequest.predicate = NSPredicate(format: "id == %d", id)
+    func addTodo(_ todo: TodoEntity) {
+        createTodoObject(from: todo)
+        saveContext()
+    }
+    
+    func updateTodo(_ todo: TodoEntity) {
+        let request: NSFetchRequest<Todo> = Todo.fetchRequest()
 
         do {
-            if let todoObject = try context.fetch(fetchRequest).first {
-                context.delete(todoObject)
-                try context.save()
-            } else {
-                print("⚠️ Не найден объект с id: \(id)")
+            if let object = try context.fetch(request).first {
+                object.update(with: todo)
+                saveContext()
             }
         } catch {
-            print("❌ Ошибка при удалении объекта из Core Data: \(error)")
+            print("Ошибка обновления задачи: \(error)")
+        }
+    }
+    
+    func updateStatus(for id: Int, isCompleted: Bool) {
+        let request = fetchRequest(withID: id)
+        do {
+            if let object = try context.fetch(request).first {
+                object.isCompleted = isCompleted
+                saveContext()
+            }
+        } catch {
+            print("❌ Status update error: \(error)")
         }
     }
 
+    func deleteTodo(withID id: Int) {
+        let request = fetchRequest(withID: id)
+        do {
+            if let object = try context.fetch(request).first {
+                context.delete(object)
+                saveContext()
+            } else {
+                print("⚠️ No object found with ID: \(id)")
+            }
+        } catch {
+            print("❌ Delete error: \(error)")
+        }
+    }
 
     func deleteAllTodos() {
         let request: NSFetchRequest<NSFetchRequestResult> = Todo.fetchRequest()
@@ -112,27 +97,29 @@ final class TodoCoreDataService {
         }
     }
 
-    func saveContext() {
-        if context.hasChanges {
-            do {
-                try context.save()
-            } catch {
-                print("Ошибка сохранения CoreData: \(error)")
-            }
+    // MARK: - Private Helpers
+    
+    private func saveContext() {
+        guard context.hasChanges else { return }
+        do {
+            try context.save()
+        } catch {
+            print("❌ CoreData save error: \(error)")
         }
     }
     
-    func updateTodoStatus(id: Int, isCompleted: Bool) {
+    private func fetchRequest(withID id: Int) -> NSFetchRequest<Todo> {
         let request: NSFetchRequest<Todo> = Todo.fetchRequest()
         request.predicate = NSPredicate(format: "id == %d", id)
-
-        do {
-            if let todo = try context.fetch(request).first {
-                todo.isCompleted = isCompleted
-                saveContext()
-            }
-        } catch {
-            print("Ошибка обновления статуса задачи: \(error)")
-        }
+        return request
+    }
+    
+    private func createTodoObject(from entity: TodoEntity) {
+        let todo = Todo(context: context)
+        todo.id = Int64(entity.id)
+        todo.title = entity.title
+        todo.todoDesc = entity.description
+        todo.date = entity.date
+        todo.isCompleted = entity.isCompleted
     }
 }

@@ -16,6 +16,7 @@ protocol AddTaskViewProtocol: AnyObject {
 protocol AddTaskPresenterProtocol: AnyObject {
     func didTapSave(title: String, description: String)
     func didSaveTodo(_ todo: TodoEntity)
+    func didFinishSaving()
 }
 
 // MARK: - Interactor

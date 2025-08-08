@@ -6,7 +6,7 @@
 //
 import Foundation
 
-struct TodoEntity: Equatable {
+struct TodoEntity: Equatable, Codable {
     let id: Int
     var title: String
     var description: String

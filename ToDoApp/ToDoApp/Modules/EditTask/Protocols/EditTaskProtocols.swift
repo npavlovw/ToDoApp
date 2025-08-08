@@ -12,7 +12,6 @@ protocol EditTaskViewProtocol: AnyObject {
 }
 
 protocol EditTaskPresenterProtocol: AnyObject {
-    var router: EditTaskRouterProtocol! { get set }
     func viewDidLoad()
     func didTapSave(title: String?, description: String?)
 }

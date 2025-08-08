@@ -287,7 +287,7 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     private func deleteTodo(at indexPath: IndexPath) {
         let todo = todos[indexPath.row]
 
-        TodoCoreDataService.shared.deleteTodoFromCoreData(with: todo.id)
+        TodoCoreDataService.shared.deleteTodo(withID: todo.id)
 
         todos.remove(at: indexPath.row)
         tableView.deleteRows(at: [indexPath], with: .fade)
@@ -377,7 +377,7 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
                 guard let self else { return }
 
                 let newStatus = !tappedTodo.isCompleted
-                TodoCoreDataService.shared.updateTodoStatus(id: tappedTodo.id, isCompleted: newStatus)
+                TodoCoreDataService.shared.updateStatus(for: tappedTodo.id, isCompleted: newStatus)
 
                 if let index = self.todos.firstIndex(where: { $0.id == tappedTodo.id }) {
                     self.todos[index].isCompleted = newStatus

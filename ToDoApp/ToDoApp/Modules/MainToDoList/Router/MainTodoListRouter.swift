@@ -8,7 +8,7 @@
 import UIKit
 
 final class MainTodoListRouter: MainTodoListRouterProtocol {
-    weak var viewController: UIViewController?
+    weak var viewController: MainTodoListViewController?
     
     static func createModule() -> UIViewController {
         let view = MainTodoListViewController()
@@ -28,18 +28,14 @@ final class MainTodoListRouter: MainTodoListRouterProtocol {
     
     func navigateToAddTask() {
         let addTaskVC = AddTaskRouter.createModule { [weak self] newTask in
-            guard let self, let vc = self.viewController as? MainTodoListViewController else { return }
-            
-            vc.insertTodo(newTask)
-            }
-        
+            self?.viewController?.insertTodo(newTask)
+        }
         viewController?.navigationController?.pushViewController(addTaskVC, animated: true)
     }
-    
-    func navigateToEditTodo(from view: UIViewController, todo: TodoEntity) {
+
+    func navigateToEditTodo(todo: TodoEntity) {
         let editVC = EditTaskRouter.createModule(with: todo) { [weak self] updatedTodo in
-            guard let self, let vc = self.viewController as? MainTodoListViewController else { return }
-            vc.updateTodo(updatedTodo)
+            self?.viewController?.updateTodo(updatedTodo)
         }
         viewController?.navigationController?.pushViewController(editVC, animated: true)
     }
