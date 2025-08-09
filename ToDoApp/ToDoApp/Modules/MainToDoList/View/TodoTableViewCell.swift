@@ -9,22 +9,21 @@ import UIKit
 import SnapKit
 
 final class ToDoTableViewCell: UITableViewCell {
-    var onToggleStatus: (() -> Void)?
+    
+    //MARK: - Callbacks
+    private var onToggleStatus: (() -> Void)?
     
     //MARK: - UI
     private let titleLabel = UILabel()
     private let descriptionLabel = UILabel()
     private let dateLabel = UILabel()
     private let statusView = UIImageView()
-
+    
     //MARK: - Init
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
-        
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTapStatus))
-        statusView.isUserInteractionEnabled = true
-        statusView.addGestureRecognizer(tapGesture)
+        setupGesture()
     }
     
     required init?(coder: NSCoder) {
@@ -72,6 +71,12 @@ final class ToDoTableViewCell: UITableViewCell {
         }
     }
     
+    private func setupGesture() {
+        statusView.isUserInteractionEnabled = true
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTapStatus))
+        statusView.addGestureRecognizer(tapGesture)
+    }
+    
     //MARK: - Actions
     @objc private func didTapStatus() {
         onToggleStatus?()
@@ -79,18 +84,23 @@ final class ToDoTableViewCell: UITableViewCell {
     
     //MARK: - Public
     func configure(todo: TodoEntity, dateText: String, onToggleStatus: @escaping (TodoEntity) -> Void) {
+        descriptionLabel.text = todo.description
+        dateLabel.text = dateText
+        
         self.onToggleStatus = { onToggleStatus(todo) }
-
+        configureStatus(for: todo)
+    }
+    
+    //MARK: - Private helpers
+    private func configureStatus(for todo: TodoEntity) {
         if todo.isCompleted {
-            let attributedTitle = NSAttributedString(
+            titleLabel.attributedText = NSAttributedString(
                 string: todo.title,
                 attributes: [
                     .strikethroughStyle: NSUnderlineStyle.single.rawValue,
                     .foregroundColor: UIColor.stroke
                 ]
             )
-            titleLabel.attributedText = attributedTitle
-            titleLabel.textColor = .stroke
             descriptionLabel.textColor = .stroke
             statusView.image = UIImage(systemName: "checkmark.circle")
             statusView.tintColor = .yellowApp
@@ -101,8 +111,5 @@ final class ToDoTableViewCell: UITableViewCell {
             statusView.image = UIImage(systemName: "circle")
             statusView.tintColor = .stroke
         }
-
-        descriptionLabel.text = todo.description
-        dateLabel.text = dateText
     }
 }

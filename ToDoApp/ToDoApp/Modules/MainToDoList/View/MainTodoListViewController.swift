@@ -10,10 +10,17 @@ import SnapKit
 import Speech
 
 class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
+    
+    // MARK: - Properties
     var presenter: MainTodoListPresenterProtocol?
     private var todos: [TodoEntity] = []
     var filteredTodos: [TodoEntity] = []
     var isSearching = false
+    
+    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
+    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
+    private var recognitionTask: SFSpeechRecognitionTask?
+    private let audioEngine = AVAudioEngine()
     
     //MARK: - UI
     private let titleLabel = UILabel()
@@ -24,39 +31,42 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
     private let taskCountLabel = UILabel()
     private let addBtn = UIButton()
     
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
-    private let audioEngine = AVAudioEngine()
-
     //MARK: - LifeCycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.navigationController?.isNavigationBarHidden = true
+        navigationController?.isNavigationBarHidden = true
         presenter?.viewDidLoad()
         setupUI()
-        makeConstraints()
+        setupConstraints()
         allowMicrophone()
-        
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        tapGesture.cancelsTouchesInView = false
-        view.addGestureRecognizer(tapGesture)
+        setupDismissKeyboardGesture()
     }
+}
 
-    //MARK: - Setup UI
-    private func setupUI() {
+//MARK: - Setup UI
+private extension MainTodoListViewController {
+    
+    func setupUI() {
         view.backgroundColor = .black
-        
-        //Title
+        setupTitleLabel()
+        setupSearchBar()
+        setupMicButton()
+        setupTableView()
+        setupBottomBar()
+    }
+    
+    func setupTitleLabel() {
         titleLabel.text = "Задачи"
         titleLabel.font = UIFont.boldSystemFont(ofSize: 34)
         titleLabel.textColor = .white
-        
-        //SearchBar
+    }
+    
+    func setupSearchBar() {
         searchBar.placeholder = "Search"
         searchBar.searchBarStyle = .minimal
         searchBar.tintColor = .grayApp
         searchBar.delegate = self
+        
         if let textField = searchBar.value(forKey: "searchField") as? UITextField {
             textField.backgroundColor = .grayApp
             textField.textColor = .whiteApp
@@ -67,37 +77,34 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
                     .foregroundColor: UIColor.whiteApp
                 ]
             )
-            textField.snp.makeConstraints {
-                $0.edges.equalToSuperview()
-            }
         }
-            
-        //micButton
+    }
+    
+    func setupMicButton() {
         micButton.setImage(UIImage(systemName: "mic.fill"), for: .normal)
         micButton.tintColor = .lightGray
         micButton.addTarget(self, action: #selector(micButtonTapped), for: .touchUpInside)
-        
-        //TableView
+    }
+    
+    func setupTableView() {
         tableView.backgroundColor = .black
         tableView.separatorStyle = .singleLine
         tableView.register(ToDoTableViewCell.self, forCellReuseIdentifier: "ToDoCell")
         tableView.dataSource = self
         tableView.delegate = self
-        
-        //BottomBar
+    }
+    
+    func setupBottomBar() {
         bottomBar.backgroundColor = .grayApp
         taskCountLabel.textColor = .white
         taskCountLabel.font = UIFont.systemFont(ofSize: 11)
         
-        //AddBtn
-        let icon = UIImage(systemName: "square.and.pencil")
-        addBtn.setImage(icon, for: .normal)
+        addBtn.setImage(UIImage(systemName: "square.and.pencil"), for: .normal)
         addBtn.tintColor = .yellowApp
         addBtn.addTarget(self, action: #selector(didTapAdd), for: .touchUpInside)
     }
     
-    // MARK: - Constraints
-    private func makeConstraints() {
+    func setupConstraints() {
         view.addSubview(titleLabel)
         view.addSubview(searchBar)
         view.addSubview(micButton)
@@ -144,50 +151,159 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         }
     }
     
-    // MARK: - Actions
-    
-    func showTodos(_ todos: [TodoEntity]) {
-        self.todos = todos
-            .sorted {
-                if $0.isCompleted == $1.isCompleted {
-                    return $0.date < $1.date
-                }
-                return !$0.isCompleted && $1.isCompleted
-            }
-        
-        tableView.reloadData()
-        
-        taskCountLabel.text = "\(todos.count) Задач"
+    func setupDismissKeyboardGesture() {
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleGlobalTap))
+        tapGesture.cancelsTouchesInView = false
+        view.addGestureRecognizer(tapGesture)
     }
+}
     
-    func allowMicrophone () {
-        SFSpeechRecognizer.requestAuthorization { authStatus in
-            switch authStatus {
-            case .authorized:
-                print("Speech recognition authorized")
-            default:
-                print("Speech recognition not authorized")
-            }
-        }
-    }
+// MARK: - Actions
+private extension MainTodoListViewController {
     
     @objc private func didTapAdd() {
         presenter?.didTapAddTask()
     }
     
-    private func format(_ date: Date) -> String {
+    @objc private func micButtonTapped() {
+        if audioEngine.isRunning {
+            stopListening()
+        } else {
+            startListening()
+            micButton.tintColor = .systemOrange
+        }
+    }
+
+    
+    @objc private func handleGlobalTap() {
+        if audioEngine.isRunning {
+            stopListening()
+        }
+        dismissKeyboard()
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+}
+    
+//MARK: - Helpers
+private extension MainTodoListViewController {
+    
+    func format(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd/MM/yy"
         return formatter.string(from: date)
     }
     
-    func insertTodo(_ todo: TodoEntity) {
-        todos.insert(todo, at: 0)
-        tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
+    func updateTaskCount() {
         taskCountLabel.text = "\(todos.count) Задач"
     }
     
-    private func makeContextMenu(for todo: TodoEntity, at indexPath: IndexPath) -> UIMenu {
+    private func deleteTodoAt(_ indexPath: IndexPath) {
+        let todo = todos[indexPath.row]
+        TodoCoreDataService.shared.deleteTodo(withID: todo.id)
+        todos.remove(at: indexPath.row)
+        tableView.deleteRows(at: [indexPath], with: .fade)
+        updateTaskCount()
+    }
+}
+    
+// MARK: - MainTodoListViewProtocol
+extension MainTodoListViewController {
+    
+    func showTodos(_ todos: [TodoEntity]) {
+        self.todos = todos
+        tableView.reloadData()
+        updateTaskCount()
+    }
+    
+    func insertTodo(_ todo: TodoEntity) {
+        todos.insert(todo, at: 0)
+        tableView.insertRows(at: [IndexPath(row: 0, section: 0)], with: .automatic)
+        updateTaskCount()
+    }
+    
+    func updateTodo(_ updatedTodo: TodoEntity) {
+        if let index = todos.firstIndex(where: { $0.id == updatedTodo.id }) {
+            todos[index] = updatedTodo
+            tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
+        }
+    }
+}
+    
+// MARK: - Speech Recognition
+private extension MainTodoListViewController {
+    
+    func allowMicrophone () {
+        SFSpeechRecognizer.requestAuthorization { authStatus in
+            DispatchQueue.main.async {
+                switch authStatus {
+                case .authorized:
+                    print("Speech recognition authorized")
+                default:
+                    print("Speech recognition not authorized")
+                }
+            }
+        }
+    }
+    
+    private func startListening() {
+        if recognitionTask != nil {
+            recognitionTask?.cancel()
+            recognitionTask = nil
+        }
+
+        let audioSession = AVAudioSession.sharedInstance()
+        try? audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try? audioSession.setActive(true, options: .notifyOthersOnDeactivation)
+
+        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
+        let inputNode = audioEngine.inputNode
+        guard let recognitionRequest = recognitionRequest else { return }
+
+        recognitionRequest.shouldReportPartialResults = true
+
+        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
+            if let result = result {
+                let bestString = result.bestTranscription.formattedString
+                DispatchQueue.main.async {
+                    self?.searchBar.text = bestString
+                }
+            }
+
+            if error != nil || (result?.isFinal ?? false) {
+                self?.stopListening()
+            }
+        }
+
+        let recordingFormat = inputNode.outputFormat(forBus: 0)
+        inputNode.removeTap(onBus: 0)
+        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
+            self.recognitionRequest?.append(buffer)
+        }
+
+        audioEngine.prepare()
+        try? audioEngine.start()
+        micButton.tintColor = .red
+    }
+
+    
+    private func stopListening() {
+        audioEngine.stop()
+        audioEngine.inputNode.removeTap(onBus: 0)
+        recognitionRequest?.endAudio()
+        recognitionTask?.cancel()
+        recognitionTask = nil
+        recognitionRequest = nil
+        micButton.tintColor = .lightGray
+    }
+}
+   
+// MARK: - Context menu
+private extension MainTodoListViewController {
+    
+    func makeContextMenu(for todo: TodoEntity, at indexPath: IndexPath) -> UIMenu {
         
         let edit = UIAction(title: "Редактировать", image: UIImage(named: "EditApp")) { _ in
             self.editTodo(todo)
@@ -217,12 +333,14 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
                 self.todos.remove(at: indexPath.row)
                 self.tableView.deleteRows(at: [indexPath], with: .automatic)
             }
+            
+            self.updateTaskCount()
         }
 
         return UIMenu(title: "", children: [edit, share, delete])
     }
     
-    private func makePreviewController(for todo: TodoEntity) -> UIViewController {
+    func makePreviewController(for todo: TodoEntity) -> UIViewController {
         let preview = UIViewController()
         preview.view.backgroundColor = .darkGray
         preview.view.layer.cornerRadius = 12
@@ -272,87 +390,16 @@ class MainTodoListViewController: UIViewController, MainTodoListViewProtocol {
         return preview
     }
 
-    private func editTodo(_ todo: TodoEntity) {
+    func editTodo(_ todo: TodoEntity) {
         self.presenter?.didSelectTodo(todo)
     }
 
-    private func shareTodo(_ todo: TodoEntity) {
+    func shareTodo(_ todo: TodoEntity) {
         let activityVC = UIActivityViewController(
             activityItems: [todo.title, todo.description],
             applicationActivities: nil
         )
         present(activityVC, animated: true)
-    }
-
-    private func deleteTodo(at indexPath: IndexPath) {
-        let todo = todos[indexPath.row]
-
-        TodoCoreDataService.shared.deleteTodo(withID: todo.id)
-
-        todos.remove(at: indexPath.row)
-        tableView.deleteRows(at: [indexPath], with: .fade)
-        taskCountLabel.text = "\(todos.count) Задач"
-    }
-    
-    func updateTodo(_ updatedTodo: TodoEntity) {
-        if let index = todos.firstIndex(where: { $0.id == updatedTodo.id }) {
-            todos[index] = updatedTodo
-            tableView.reloadRows(at: [IndexPath(row: index, section: 0)], with: .automatic)
-        }
-    }
-
-    @objc private func micButtonTapped() {
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            recognitionRequest?.endAudio()
-        } else {
-            startListening()
-        }
-    }
-
-    private func startListening() {
-        if recognitionTask != nil {
-            recognitionTask?.cancel()
-            recognitionTask = nil
-        }
-
-        let audioSession = AVAudioSession.sharedInstance()
-        try? audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
-        try? audioSession.setActive(true, options: .notifyOthersOnDeactivation)
-
-        recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
-        let inputNode = audioEngine.inputNode
-        guard let recognitionRequest = recognitionRequest else { return }
-
-        recognitionRequest.shouldReportPartialResults = true
-
-        recognitionTask = speechRecognizer?.recognitionTask(with: recognitionRequest) { [weak self] result, error in
-            if let result = result {
-                let bestString = result.bestTranscription.formattedString
-                DispatchQueue.main.async {
-                    self?.searchBar.text = bestString
-                }
-            }
-
-            if error != nil || (result?.isFinal ?? false) {
-                self?.audioEngine.stop()
-                inputNode.removeTap(onBus: 0)
-                self?.recognitionRequest = nil
-                self?.recognitionTask = nil
-            }
-        }
-
-        let recordingFormat = inputNode.outputFormat(forBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { buffer, _ in
-            self.recognitionRequest?.append(buffer)
-        }
-
-        audioEngine.prepare()
-        try? audioEngine.start()
-    }
-
-    @objc private func dismissKeyboard() {
-        view.endEditing(true)
     }
 }
 
@@ -386,19 +433,6 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
                     self.filteredTodos[index].isCompleted = newStatus
                 }
                 
-                self.todos.sort {
-                    if $0.isCompleted == $1.isCompleted {
-                        return $0.date < $1.date
-                    }
-                    return !$0.isCompleted && $1.isCompleted
-                }
-                self.filteredTodos.sort {
-                    if $0.isCompleted == $1.isCompleted {
-                        return $0.date < $1.date
-                    }
-                    return !$0.isCompleted && $1.isCompleted
-                }
-
                 self.tableView.reloadData()
             }
         )
@@ -425,7 +459,7 @@ extension MainTodoListViewController: UITableViewDataSource, UITableViewDelegate
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle,forRowAt indexPath: IndexPath) {
         
         if editingStyle == .delete {
-            deleteTodo(at: indexPath)
+            deleteTodoAt(indexPath)
         }
     }
     
@@ -451,12 +485,6 @@ extension MainTodoListViewController: UISearchBarDelegate {
             .filter { todo in
                 todo.title.lowercased().contains(searchText.lowercased()) ||
                 todo.description.lowercased().contains(searchText.lowercased())
-            }
-            .sorted {
-                if $0.isCompleted == $1.isCompleted {
-                    return $0.date < $1.date
-                }
-                return !$0.isCompleted && $1.isCompleted
             }
 
         tableView.reloadData()
