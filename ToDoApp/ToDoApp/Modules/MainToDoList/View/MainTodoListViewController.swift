@@ -316,14 +316,13 @@ private extension MainTodoListViewController {
         let delete = UIAction(title: "Удалить",
                               image: UIImage(named: "TrashApp"),
                               attributes: [.destructive]) { _ in
+            TodoCoreDataService.shared.deleteTodo(withID: todo.id)
+            
             if self.isSearching {
-                let fullIndex = self.todos.firstIndex(where: { $0.id == todo.id })
-                let filteredIndex = self.filteredTodos.firstIndex(where: { $0.id == todo.id })
-
-                if let fullIndex = fullIndex {
+                if let fullIndex = self.todos.firstIndex(where: { $0.id == todo.id }) {
                     self.todos.remove(at: fullIndex)
                 }
-                if let filteredIndex = filteredIndex {
+                if let filteredIndex = self.filteredTodos.firstIndex(where: { $0.id == todo.id }) {
                     self.filteredTodos.remove(at: filteredIndex)
                     self.tableView.deleteRows(at: [IndexPath(row: filteredIndex, section: 0)], with: .automatic)
                 } else {
@@ -336,6 +335,7 @@ private extension MainTodoListViewController {
             
             self.updateTaskCount()
         }
+
 
         return UIMenu(title: "", children: [edit, share, delete])
     }

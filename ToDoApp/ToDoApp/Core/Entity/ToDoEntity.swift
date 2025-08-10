@@ -4,6 +4,7 @@
 //
 //  Created by Никита Павлов on 01.08.2025.
 //
+
 import Foundation
 
 struct TodoEntity: Equatable, Codable {

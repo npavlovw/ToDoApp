@@ -5,7 +5,6 @@
 //  Created by Никита Павлов on 03.08.2025.
 //
 
-import Foundation
 import CoreData
 
 final class TodoCoreDataService {
