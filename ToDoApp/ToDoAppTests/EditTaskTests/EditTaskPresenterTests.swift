@@ -5,73 +5,90 @@
 //  Created by Никита Павлов on 07.08.2025.
 //
 //
-//import XCTest
-//@testable import ToDoApp
-//
-//final class EditTaskPresenterTests: XCTestCase {
-//    var presenter: EditTaskPresenter!
-//    var mockView: MockEditTaskView!
-//    var mockInteractor: MockEditTaskInteractor!
-//    var mockRouter: MockEditTaskRouter!
-//    
-//    override func setUp() {
-//        super.setUp()
-//        presenter = EditTaskPresenter()
-//        mockView = MockEditTaskView()
-//        mockInteractor = MockEditTaskInteractor()
-//        mockRouter = MockEditTaskRouter()
-//        
-//        presenter.view = mockView
-//        presenter.interactor = mockInteractor
-//        presenter.router = mockRouter
-//    }
-//    
-//    func testViewDidLoad_shouldShowTodo() {
-//        let todo = TodoEntity(id: 1, title: "Test", description: "Desc", date: Date(), isCompleted: false)
-//        presenter.todo = todo
-//        
-//        presenter.viewDidLoad()
-//        
-//        XCTAssertTrue(mockView.didShowTodo)
-//        XCTAssertEqual(mockView.shownTodo?.id, 1)
-//    }
-//    
-//    func testDidTapSave_shouldUpdateAndClose() {
-//        let updated = TodoEntity(id: 2, title: "Updated", description: "", date: Date(), isCompleted: true)
-//        
-//        presenter.didTapSave(updatedTodo: updated)
-//        
-//        XCTAssertEqual(mockInteractor.updatedTodo?.id, 2)
-//        XCTAssertTrue(mockRouter.didCallClose)
-//    }
-//}
-//
-//// MARK: - Mocks
-//
-//final class MockEditTaskView: EditTaskViewProtocol {
-//    var didShowTodo = false
-//    var shownTodo: TodoEntity?
-//    
-//    func showTodo(_ todo: TodoEntity) {
-//        didShowTodo = true
-//        shownTodo = todo
-//    }
-//    
-//    func close() {}
-//}
-//
-//final class MockEditTaskInteractor: EditTaskInteractorProtocol {
-//    var updatedTodo: TodoEntity?
-//    
-//    func updateTodo(_ todo: TodoEntity) {
-//        updatedTodo = todo
-//    }
-//}
-//
-//final class MockEditTaskRouter: EditTaskRouterProtocol {
-//    var didCallClose = false
-//    
-//    func close() {
-//        didCallClose = true
-//    }
-//}
+import XCTest
+@testable import ToDoApp
+
+final class EditTaskPresenterTests: XCTestCase {
+    
+    class MockView: EditTaskViewProtocol {
+        var showTodoCalled = false
+        var shownTodo: TodoEntity?
+        var validationErrorMessage: String?
+        var saveSuccessCalled = false
+        
+        func showTodo(_ todo: TodoEntity) {
+            showTodoCalled = true
+            shownTodo = todo
+        }
+        
+        func showValidationError(_ message: String) {
+            validationErrorMessage = message
+        }
+        
+        func showSaveSuccess() {
+            saveSuccessCalled = true
+        }
+    }
+    
+    class MockInteractor: EditTaskInteractorProtocol {
+        var updateTodoCalled = false
+        var updatedTodo: TodoEntity?
+        
+        func updateTodo(_ todo: TodoEntity) {
+            updateTodoCalled = true
+            updatedTodo = todo
+        }
+    }
+    
+    var presenter: EditTaskPresenter!
+    var mockView: MockView!
+    var mockInteractor: MockInteractor!
+    var updatedTodoFromCallback: TodoEntity?
+    
+    override func setUp() {
+        super.setUp()
+        let todo = TodoEntity(id: 1, title: "Old title", description: "Old desc", date: Date(), isCompleted: false)
+        presenter = EditTaskPresenter(todo: todo)
+        mockView = MockView()
+        mockInteractor = MockInteractor()
+        presenter.view = mockView
+        presenter.interactor = mockInteractor
+        presenter.onUpdate = { [weak self] todo in
+            self?.updatedTodoFromCallback = todo
+        }
+    }
+    
+    override func tearDown() {
+        presenter = nil
+        mockView = nil
+        mockInteractor = nil
+        updatedTodoFromCallback = nil
+        super.tearDown()
+    }
+    
+    func test_viewDidLoad_callsShowTodo() {
+        presenter.viewDidLoad()
+        XCTAssertTrue(mockView.showTodoCalled)
+        XCTAssertEqual(mockView.shownTodo?.title, "Old title")
+    }
+    
+    func test_didTapSave_withEmptyTitle_showsValidationError() {
+        presenter.didTapSave(title: "   ", description: "desc")
+        XCTAssertEqual(mockView.validationErrorMessage, "Введите заголовок")
+        XCTAssertFalse(mockInteractor.updateTodoCalled)
+    }
+    
+    func test_didTapSave_withValidTitle_callsUpdateTodo() {
+        presenter.didTapSave(title: "New Title", description: "New Desc")
+        
+        XCTAssertTrue(mockInteractor.updateTodoCalled)
+        XCTAssertEqual(mockInteractor.updatedTodo?.title, "New Title")
+        XCTAssertEqual(mockInteractor.updatedTodo?.description, "New Desc")
+        XCTAssertNotNil(mockInteractor.updatedTodo?.date)  // дата обновлена
+        
+        presenter.todoDidUpdate()
+        
+        XCTAssertEqual(updatedTodoFromCallback?.title, "New Title")
+        XCTAssertTrue(mockView.saveSuccessCalled)
+    }
+}
