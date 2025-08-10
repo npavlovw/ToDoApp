@@ -10,34 +10,34 @@ import CoreData
 @testable import ToDoApp
 
 final class TodoCoreDataServiceTests: XCTestCase {
-    var sut: TodoCoreDataService!
-    var context: NSManagedObjectContext!
+    var service: TodoCoreDataService!
+    var persistentContainer: NSPersistentContainer!
 
     override func setUp() {
         super.setUp()
         
-        let container = NSPersistentContainer(name: "ToDoApp")
+        persistentContainer = NSPersistentContainer(name: "ToDoApp")
         let description = NSPersistentStoreDescription()
         description.type = NSInMemoryStoreType
-        container.persistentStoreDescriptions = [description]
+        persistentContainer.persistentStoreDescriptions = [description]
         
-        container.loadPersistentStores { _, error in
-            if let error = error {
-                XCTFail("Failed to load store: \(error)")
-            }
+        let expectation = self.expectation(description: "Load persistent stores")
+        persistentContainer.loadPersistentStores { _, error in
+            XCTAssertNil(error)
+            expectation.fulfill()
         }
-
-        context = container.viewContext
-        sut = TodoCoreDataService(context: context)
+        wait(for: [expectation], timeout: 1.0)
+    
+        service = TodoCoreDataService(context: persistentContainer.viewContext)
     }
     
     override func tearDown() {
-        sut = nil
-        context = nil
+        service = nil
+        persistentContainer = nil
         super.tearDown()
     }
     
-    func testAddTodo_shouldSaveTodoInCoreData() {
+    func testAddTodo() {
         let todo = TodoEntity(
             id: 1,
             title: "Test task",
@@ -46,63 +46,58 @@ final class TodoCoreDataServiceTests: XCTestCase {
             isCompleted: false
         )
         
-        sut.addTodo(todo)
+        service.addTodo(todo)
         
-        let fetchRequest: NSFetchRequest<Todo> = Todo.fetchRequest()
-        let results = try? context.fetch(fetchRequest)
-        
-        XCTAssertEqual(results?.count, 1)
-        XCTAssertEqual(results?.first?.title, "Test task")
-        XCTAssertEqual(results?.first?.todoDesc, "Test description")
+        let fetchedTodos = service.fetchTodos()
+        XCTAssertEqual(fetchedTodos.count, 1)
+        XCTAssertEqual(fetchedTodos.first?.id, todo.id)
+        XCTAssertEqual(fetchedTodos.first?.title, todo.title)
     }
     
-    func testFetchTodo_shouldReturnSavedTodos() {
-        let todo1 = TodoEntity(id: 1, title: "A", description: "A desc", date: Date(), isCompleted: false)
-        let todo2 = TodoEntity(id: 2, title: "B", description: "B desc", date: Date(), isCompleted: true)
-        sut.addTodo(todo1)
-        sut.addTodo(todo2)
+    func testUpdateTodo() {
+        let todo = TodoEntity(id: 2, title: "Old Title", description: "Old Desc", date: Date(), isCompleted: false)
+        service.addTodo(todo)
 
-        let todos = sut.fetchTodos()
+        let updatedTodo = TodoEntity(id: 2, title: "New Title", description: "New Desc", date: Date(), isCompleted: true)
+        service.updateTodo(updatedTodo)
 
-        XCTAssertEqual(todos.count, 2)
-        XCTAssertEqual(todos.first?.title, "A")
+        let fetchedTodos = service.fetchTodos()
+        XCTAssertEqual(fetchedTodos.count, 1)
+        XCTAssertEqual(fetchedTodos.first?.title, "New Title")
+        XCTAssertEqual(fetchedTodos.first?.description, "New Desc")
+        XCTAssertTrue(fetchedTodos.first?.isCompleted == true)
     }
     
-    func testUpdateTodoStatus_shouldChangeIsCompleted() {
-        let todo = TodoEntity(id: 10, title: "To update", description: "", date: Date(), isCompleted: false)
-        sut.addTodo(todo)
-        
-        sut.updateStatus(id: 10, isCompleted: true)
-        
-        let fetched = sut.fetchTodos().first(where: { $0.id == 10 })
-        XCTAssertTrue(fetched?.isCompleted == true)
+    func testDeleteTodo() {
+        let todo = TodoEntity(id: 3, title: "To Delete", description: "", date: Date(), isCompleted: false)
+        service.addTodo(todo)
+
+        service.deleteTodo(withID: 3)
+
+        let fetchedTodos = service.fetchTodos()
+        XCTAssertTrue(fetchedTodos.isEmpty)
     }
     
-    func testDeleteTodo_shouldRemoveFromCoreData() {
-        let todo = TodoEntity(id: 99, title: "To delete", description: "", date: Date(), isCompleted: false)
-        sut.addTodo(todo)
-        
-        sut.deleteTodo(with: 99)
-        
-        let results = sut.fetchTodos()
-        XCTAssertTrue(results.isEmpty)
+    func testUpdateStatus() {
+        let todo = TodoEntity(id: 4, title: "Status Test", description: "", date: Date(), isCompleted: false)
+        service.addTodo(todo)
+
+        service.updateStatus(for: 4, isCompleted: true)
+
+        let fetchedTodos = service.fetchTodos()
+        XCTAssertTrue(fetchedTodos.first?.isCompleted == true)
     }
-    
-    func testFetchTodos_whenNoData_shouldReturnEmptyArray() {
-        let todos = sut.fetchTodos()
-        XCTAssertTrue(todos.isEmpty)
-    }
-    
-    func testAddTodo_withSameID_shouldUpdateExisting() {
-        let id = 100
-        let todo1 = TodoEntity(id: id, title: "First", description: "", date: Date(), isCompleted: false)
-        let todo2 = TodoEntity(id: id, title: "Updated", description: "", date: Date(), isCompleted: true)
-        
-        sut.addTodo(todo1)
-        sut.addTodo(todo2)
-        
-        let result = sut.fetchTodos().first(where: { $0.id == id })
-        XCTAssertEqual(result?.title, "Updated")
-        XCTAssertTrue(result?.isCompleted == true)
+
+    func testDeleteAllTodos() {
+        let todos = [
+            TodoEntity(id: 5, title: "Todo1", description: "", date: Date(), isCompleted: false),
+            TodoEntity(id: 6, title: "Todo2", description: "", date: Date(), isCompleted: true)
+        ]
+        service.saveTodos(todos)
+
+        service.deleteAllTodos()
+
+        let fetchedTodos = service.fetchTodos()
+        XCTAssertTrue(fetchedTodos.isEmpty)
     }
 }

@@ -7,7 +7,7 @@
 
 import CoreData
 
-final class TodoCoreDataService {
+class TodoCoreDataService {
     private(set) static var shared: TodoCoreDataService!
     
     private let context: NSManagedObjectContext
