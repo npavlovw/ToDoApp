@@ -37,7 +37,7 @@
 		14958E892E3C08A30029B139 /* Exceptions for "ToDoApp" folder in "ToDoApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				App/Info.plist,
 			);
 			target = 14958E5D2E3C08A00029B139 /* ToDoApp */;
 		};
