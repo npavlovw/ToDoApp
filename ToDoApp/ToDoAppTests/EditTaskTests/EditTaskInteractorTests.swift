@@ -38,19 +38,12 @@ final class EditTaskInteractorTests: XCTestCase {
         interactor = EditTaskInteractor()
         interactor.output = nil
         
-        // Заменим coreDataService через рефлексию или через инициализацию (если нужно, добавим init с зависимостью)
-        // В твоём коде coreDataService - private let, надо сделать возможность инъекции, например:
-        // Для простоты сейчас предположим, что можно заменить (в реальной жизни — надо улучшить код для тестируемости)
-        
         mockOutput = MockOutput()
         interactor.output = mockOutput
     }
     
     func test_updateTodo_callsCoreDataServiceAndOutput() {
         let todo = TodoEntity(id: 1, title: "Test", description: "Desc", date: Date(), isCompleted: false)
-        
-        // Поскольку coreDataService приватный, здесь тестируем только вызов output,
-        // либо надо сделать coreDataService доступным для замены
         
         interactor.updateTodo(todo)
         
