@@ -23,7 +23,7 @@ enum NetworkError: Error {
 }
 
 
-final class TodoNetworkService {
+final class TodoNetworkService: TodoNetworkServiceProtocol{
     static let shared = TodoNetworkService()
     
     private init() {}

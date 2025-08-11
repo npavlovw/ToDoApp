@@ -66,7 +66,7 @@ class TodoCoreDataService {
                 saveContext()
             }
         } catch {
-            print("❌ Status update error: \(error)")
+            print("Status update error: \(error)")
         }
     }
 
@@ -77,24 +77,31 @@ class TodoCoreDataService {
                 context.delete(object)
                 saveContext()
             } else {
-                print("⚠️ No object found with ID: \(id)")
+                print("No object found with ID: \(id)")
             }
         } catch {
-            print("❌ Delete error: \(error)")
+            print("Delete error: \(error)")
         }
     }
 
     func deleteAllTodos() {
-        let request: NSFetchRequest<NSFetchRequestResult> = Todo.fetchRequest()
-        let deleteRequest = NSBatchDeleteRequest(fetchRequest: request)
-
-        do {
-            try context.execute(deleteRequest)
-            saveContext()
-        } catch {
-            print("Ошибка удаления: \(error)")
+        let fetchRequest: NSFetchRequest<NSFetchRequestResult> = Todo.fetchRequest()
+        if context.persistentStoreCoordinator?.persistentStores.first?.type == NSInMemoryStoreType {
+            // Для тестов
+            if let todos = try? context.fetch(fetchRequest) as? [NSManagedObject] {
+                for todo in todos {
+                    context.delete(todo)
+                }
+                try? context.save()
+            }
+        } else {
+            // Для обычного стора
+            let deleteRequest = NSBatchDeleteRequest(fetchRequest: fetchRequest)
+            _ = try? context.execute(deleteRequest)
+            try? context.save()
         }
     }
+
 
     // MARK: - Private Helpers
     
@@ -103,7 +110,7 @@ class TodoCoreDataService {
         do {
             try context.save()
         } catch {
-            print("❌ CoreData save error: \(error)")
+            print("CoreData save error: \(error)")
         }
     }
     
