@@ -60,10 +60,10 @@
 		14DFF4DA2E49D673005AAF2C /* MainTodoListInteractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14DFF48D2E49D673005AAF2C /* MainTodoListInteractor.swift */; };
 		14DFF4DB2E49D673005AAF2C /* TodoNetworkServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14DFF49B2E49D673005AAF2C /* TodoNetworkServiceProtocol.swift */; };
 		14DFF4DC2E49D673005AAF2C /* EditTaskPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14DFF4842E49D673005AAF2C /* EditTaskPresenter.swift */; };
-		14DFF4DD2E49D673005AAF2C /* ToDoApp.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 14DFF4A42E49D673005AAF2C /* ToDoApp.xcdatamodeld */; };
 		14DFF4DE2E49D673005AAF2C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 14DFF4A22E49D673005AAF2C /* LaunchScreen.storyboard */; };
 		14DFF4DF2E49D673005AAF2C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 14DFF49F2E49D673005AAF2C /* Assets.xcassets */; };
 		14DFF4E12E49D778005AAF2C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 14DFF49F2E49D673005AAF2C /* Assets.xcassets */; };
+		14DFF4E22E4A0B63005AAF2C /* ToDoApp.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 14DFF4A42E49D673005AAF2C /* ToDoApp.xcdatamodeld */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -644,7 +644,7 @@
 				14DFF4DA2E49D673005AAF2C /* MainTodoListInteractor.swift in Sources */,
 				14DFF4DB2E49D673005AAF2C /* TodoNetworkServiceProtocol.swift in Sources */,
 				14DFF4DC2E49D673005AAF2C /* EditTaskPresenter.swift in Sources */,
-				14DFF4DD2E49D673005AAF2C /* ToDoApp.xcdatamodeld in Sources */,
+				14DFF4E22E4A0B63005AAF2C /* ToDoApp.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
